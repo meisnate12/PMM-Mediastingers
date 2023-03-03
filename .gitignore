@@ -11,7 +11,6 @@ __pycache__/
 .vscode
 .Python
 /test*
-logs/
 config/*
 !config/overlays/
 config/overlays/*/
@@ -65,7 +64,6 @@ coverage.xml
 *.pot
 
 # Django stuff:
-*.log
 local_settings.py
 db.sqlite3
 db.sqlite3-journal

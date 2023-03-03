@@ -1,27 +1,49 @@
-import os, re, requests, ruamel.yaml # noqa
+import os, re, sys
 from datetime import datetime
-from tmdbapis import TMDbAPIs, TMDbException
-from lxml import html
 
+if sys.version_info[0] != 3 or sys.version_info[1] < 11:
+    print("Version Error: Version: %s.%s.%s incompatible please use Python 3.11+" % (sys.version_info[0], sys.version_info[1], sys.version_info[2]))
+    sys.exit(0)
+
+try:
+    import requests
+    from lxml import html
+    from pmmutils import logging, util
+    from pmmutils.args import PMMArgs
+    from pmmutils.exceptions import Failed
+    from pmmutils.yaml import YAML
+    from tmdbapis import TMDbAPIs, TMDbException
+except (ModuleNotFoundError, ImportError):
+    print("Requirements Error: Requirements are not installed")
+    sys.exit(0)
+
+options = [
+    {"arg": "ta", "key": "tmdbapi",      "env": "TMDBAPI",      "type": "str",  "default": None,  "help": "TMDb V3 API Key for restoring posters from TMDb."},
+    {"arg": "tr", "key": "trace",        "env": "TRACE",        "type": "bool", "default": False, "help": "Run with extra trace logs."},
+    {"arg": "lr", "key": "log-requests", "env": "LOG_REQUESTS", "type": "bool", "default": False, "help": "Run with every request logged."}
+]
+script_name = "Media Stinger"
+base_dir = os.path.dirname(os.path.abspath(__file__))
+pmmargs = PMMArgs("meisnate12/PMM-Mediastinger", os.path.dirname(os.path.abspath(__file__)), options, use_nightly=False)
+logger = logging.PMMLogger(script_name, "stinger", os.path.join(base_dir, "logs"), is_trace=pmmargs["trace"], log_requests=pmmargs["log-requests"])
+logger.screen_width = 175
+logger.secret([pmmargs["tmdbapi"]])
+logger.header(pmmargs, sub=True, count=0)
+logger.separator("Validating Options", space=False, border=False)
+logger.start()
 tmdb = TMDbAPIs(os.getenv("TMDBAPI"))
+logger.info("TMDb Connected Successfully")
 url = "http://www.mediastinger.com/movies-with-stingers/"
 page_num = 0
-data = {}
-
-yaml = ruamel.yaml.YAML()
-yaml.indent(mapping=2, sequence=2)
-with open("tmdb_override.yml", encoding="utf-8") as fp:
-    ov_data = yaml.load(fp)
-    override = {t: i for t, i in ov_data.items()}
-
-print_data = {}
+override = {t: i for t, i in YAML(path=os.path.join(base_dir, "tmdb_override.yml"), create=True).items()}
+rows = []
+data = YAML(path=os.path.join(base_dir, "stingers.yml"), start_empty=True)
 while url:
     page_num += 1
-    print_data[page_num] = {"url": url}
+    logger.info(f"Parsing Page {page_num}: {url}")
     response = html.fromstring(requests.get(url).content)
     next_page = response.xpath("//a[@title='Next page']/@href")
     url = next_page[0] if next_page else None
-    rows = []
     for item in response.xpath("//ul[@class='highlights showhidehtml commonclssearch divwidth']/li"): # noqa
         title = item.xpath("a/span/div/text()")
         if title:
@@ -60,40 +82,14 @@ while url:
                 tmdb_title = ""
             rows.append((str(tmdb_item.id), rating_str, title, tmdb_title))
             data[tmdb_item.id] = rating
-    print_data[page_num]["rows"] = rows
 
-id_max = len("TMDb ID")
-rating_max = len("Rating")
-title_max = len("MediaStinger Title")
-tmdb_max = len("Message or TMDb Title If different")
-for i, p_data in print_data.items():
-    _id_max = len(max(p_data["rows"], key=lambda t: len(t[0]))[0])
-    if _id_max > id_max:
-        id_max = _id_max
-    _rating_max = len(max(p_data["rows"], key=lambda t: len(t[1]))[1])
-    if _rating_max > rating_max:
-        rating_max = _rating_max
-    _title_max = len(max(p_data["rows"], key=lambda t: len(t[2]))[2])
-    if _title_max > title_max:
-        title_max = _title_max
-    _tmdb_max = len(max(p_data["rows"], key=lambda t: len(t[3]))[3])
-    if _tmdb_max > tmdb_max:
-        tmdb_max = _tmdb_max
+headers = ["TMDb ID", "Rating", "MediaStinger Title", "Warning Message or TMDb Title When Different"]
+widths = []
+for i, header in enumerate(headers):
+    _max = len(max(rows, key=lambda t: len(t[i]))[i])
+    widths.append(_max if _max > len(header) else len(header))
 
-for i, p_data in print_data.items():
-    if i > 1:
-        print()
-    print(f"| Page {i}: {p_data['url']}")
-    print(f"| {'TMDb ID':^{id_max}} | {'Rating':^{rating_max}} | {'MediaStinger Title':<{title_max}} | {'Message or TMDb Title If different':<{tmdb_max}} |")
-    print(f"|{'-' * (id_max + 2)}|{'-' * (rating_max + 2)}|{'-' * (title_max + 2)}|{'-' * (tmdb_max + 2)}|")
-    for row in p_data["rows"]:
-        print(f"| {row[0]:^{id_max}} | {row[1]:^{rating_max}} | {row[2]:<{title_max}} | {row[3]:<{tmdb_max}} |")
-
-yaml = ruamel.yaml.YAML()
-yaml.indent(mapping=2, sequence=2)
-with open("stingers.yml", 'w', encoding="utf-8") as fp:
-    yaml.dump(data, fp)
-
+data.save()
 
 with open("README.md", "r") as f:
     readme_data = f.readlines()
@@ -102,3 +98,11 @@ readme_data[1] = f"Last generated at: {datetime.utcnow().strftime('%B %d, %Y %I:
 
 with open("README.md", "w") as f:
     f.writelines(readme_data)
+
+logger.separator("Stinger Report")
+logger.info(f"{headers[0]:^{widths[0]}} | {headers[1]:^{widths[1]}} | {headers[2]:<{widths[2]}} | {headers[3]:<{widths[3]}}")
+logger.separator(f"{'-' * widths[0]}|{'-' * (widths[1] + 2)}|{'-' * (widths[2] + 2)}|{'-' * (widths[3] + 1)}", space=False, border=False, side_space=False, sep="-", left=True)
+for tmdb_id, rating, title, message in rows:
+    logger.info(f"{tmdb_id:>{widths[0]}} | {rating:>{widths[1]}} | {title:<{widths[2]}} | {message:<{widths[3]}}")
+
+logger.separator(f"{script_name} Finished\nTotal Runtime: {logger.runtime()}")
