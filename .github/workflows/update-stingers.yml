@@ -31,7 +31,7 @@ jobs:
 
       - name: Run Update Media Stingers
         env:
-          TMDBAPI: ${{ env.TMDBAPI }}
+          TMDBAPI: ${{ secrets.TMDBAPI }}
         run: python stinger.py
 
       - name: Commit Changes
