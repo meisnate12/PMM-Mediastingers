@@ -10,7 +10,12 @@ This list is generated daily at 12:00 AM UTC
 This is an example mapping entry you would find in the [stingers.yml](https://raw.githubusercontent.com/meisnate12/PMM-Mediastingers/master/stingers) file.
 
 ```yml
+2357: 7
+16996: 2
 187017: 179
+1429: -3
+6557: 5
+62206: 11
 ```
 The keys are the tmdb_id and the number is the Mediastinger Rating.
 

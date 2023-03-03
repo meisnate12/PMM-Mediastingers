@@ -32,7 +32,7 @@ jobs:
       - name: Run Update Media Stingers
         env:
           TMDBAPI: ${{ env.TMDBAPI }}
-        run: python stingers.py
+        run: python stinger.py
 
       - name: Commit Changes
         run: |
