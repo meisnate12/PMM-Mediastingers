@@ -28,7 +28,7 @@ pmmargs = PMMArgs("meisnate12/PMM-Mediastinger", os.path.dirname(os.path.abspath
 logger = logging.PMMLogger(script_name, "stinger", os.path.join(base_dir, "logs"), is_trace=pmmargs["trace"], log_requests=pmmargs["log-requests"])
 logger.screen_width = 175
 logger.secret([pmmargs["tmdbapi"]])
-logger.header(pmmargs, sub=True, count=0)
+logger.header(pmmargs, sub=True)
 logger.separator("Validating Options", space=False, border=False)
 logger.start()
 tmdb = TMDbAPIs(os.getenv("TMDBAPI"))
