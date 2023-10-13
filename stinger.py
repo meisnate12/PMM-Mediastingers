@@ -24,7 +24,7 @@ options = [
 ]
 script_name = "Media Stinger"
 base_dir = os.path.dirname(os.path.abspath(__file__))
-pmmargs = PMMArgs("meisnate12/PMM-Mediastinger", os.path.dirname(os.path.abspath(__file__)), options, use_nightly=False)
+pmmargs = PMMArgs("meisnate12/PMM-Mediastinger", base_dir, options, use_nightly=False)
 logger = logging.PMMLogger(script_name, "stinger", os.path.join(base_dir, "logs"), is_trace=pmmargs["trace"], log_requests=pmmargs["log-requests"])
 logger.screen_width = 175
 logger.secret([pmmargs["tmdbapi"]])
