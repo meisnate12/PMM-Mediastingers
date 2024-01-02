@@ -1,4 +1,4 @@
-lxml==4.9.3
+lxml==5.0.0
 pmmutils==0.5.3
 requests==2.31.0
 tmdbapis==1.2.2
