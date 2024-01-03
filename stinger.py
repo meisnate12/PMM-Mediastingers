@@ -1,5 +1,5 @@
 import os, re, sys
-from datetime import datetime
+from datetime import datetime, UTC
 
 if sys.version_info[0] != 3 or sys.version_info[1] < 11:
     print("Version Error: Version: %s.%s.%s incompatible please use Python 3.11+" % (sys.version_info[0], sys.version_info[1], sys.version_info[2]))
@@ -7,10 +7,10 @@ if sys.version_info[0] != 3 or sys.version_info[1] < 11:
 
 try:
     import requests
+    from git import Repo
     from lxml import html
-    from pmmutils import logging, util
+    from pmmutils import logging
     from pmmutils.args import PMMArgs
-    from pmmutils.exceptions import Failed
     from pmmutils.yaml import YAML
     from tmdbapis import TMDbAPIs, TMDbException
 except (ModuleNotFoundError, ImportError):
@@ -91,13 +91,15 @@ for i, header in enumerate(headers):
 
 data.save()
 
-with open("README.md", "r") as f:
-    readme_data = f.readlines()
+if [item.a_path for item in Repo(path=".").index.diff(None) if item.a_path.endswith(".yml")]:
 
-readme_data[1] = f"Last generated at: {datetime.utcnow().strftime('%B %d, %Y %I:%M %p')} UTC\n"
+    with open("README.md", "r") as f:
+        readme_data = f.readlines()
 
-with open("README.md", "w") as f:
-    f.writelines(readme_data)
+    readme_data[1] = f"Last generated at: {datetime.now(UTC).strftime('%B %d, %Y %I:%M %p')} UTC\n"
+
+    with open("README.md", "w") as f:
+        f.writelines(readme_data)
 
 logger.separator("Stinger Report")
 logger.info(f"{headers[0]:^{widths[0]}} | {headers[1]:^{widths[1]}} | {headers[2]:<{widths[2]}} | {headers[3]:<{widths[3]}}")
